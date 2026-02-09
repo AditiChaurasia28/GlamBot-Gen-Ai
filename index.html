@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Styling Recommendation</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>AI Skin Tone Stylist</h1>
+
+    <form method="POST" enctype="multipart/form-data">
+        <input type="file" name="image" required>
+        <button type="submit">Upload & Analyze</button>
+    </form>
+
+    {% if skin_tone %}
+        <h2>Detected Skin Tone: {{ skin_tone }}</h2>
+        <p>{{ recommendation }}</p>
+    {% endif %}
+</body>
+</html>
