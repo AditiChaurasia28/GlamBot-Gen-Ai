@@ -1,2 +1,6 @@
 # GlamBot-Gen-Ai
-A hackathon 
+A hackathon event!
+
+Our task:
+  Creating an app that
+  1. 
