@@ -1,3 +1,4 @@
+from body_ai import estimate_body_measurements, detect_body_type
 from flask import Flask, request
 from dotenv import load_dotenv
 from groq import Groq
@@ -38,6 +39,44 @@ a {{ color:#93c5fd; text-decoration:none }}
 <input type="text" name="shirt" placeholder="What shirt are you wearing? (black, blue...)">
 <button type="submit">Analyze</button>
 </form>
+
+<div class="card">
+  <h3>Body Scan (Camera)</h3>
+  <video id="video" width="100%" autoplay></video>
+  <canvas id="canvas" style="display:none;"></canvas>
+  <button type="button" onclick="startScan()">Scan Body (5s)</button>
+</div>
+
+<script>
+let video = document.getElementById("video");
+let canvas = document.getElementById("canvas");
+
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => video.srcObject = stream);
+
+function startScan() {
+  alert("Stand straight. Scanning in 5 seconds...");
+  
+  setTimeout(() => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    let ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0);
+
+    canvas.toBlob(blob => {
+      let fileInput = document.querySelector('input[name="photo"]');
+      let file = new File([blob], "body_scan.jpg", { type: "image/jpeg" });
+
+      let dt = new DataTransfer();
+      dt.items.add(file);
+      fileInput.files = dt.files;
+
+      alert("Body scan captured! Now click Analyze.");
+    });
+  }, 5000);
+}
+</script>
+
 </div>
 {output}
 </div>
@@ -56,6 +95,17 @@ def detect_skin(img):
         return "Olive"
     else:
         return "Deep"
+
+img_path = "temp_body.jpg"
+img.save(img_path)
+
+measurements = estimate_body_measurements(img_path)
+
+if measurements:
+    body_type = detect_body_type(measurements)
+else:
+    body_type = "Unknown"
+
 
 def get_products(skin, gender):
     skin = skin.capitalize()
@@ -87,7 +137,6 @@ def get_products(skin, gender):
     # Fallback if something unexpected happens
     return data.get(gender, data["male"]).get(skin, data["male"]["Medium"])
 
-
 @app.route("/", methods=["GET","POST"])
 def index():
     output = ""
@@ -107,6 +156,11 @@ def index():
             prompt += f"""
             Also suggest best pant colors if I am wearing a {shirt} shirt.
             """
+
+        prompt += f"""
+        User body type is {body_type}.
+        Give personalized fashion advice based on body type.
+        """
 
         chat = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
